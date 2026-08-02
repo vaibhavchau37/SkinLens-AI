@@ -1,3 +1,4 @@
+# SkinLens-AI requirements for Streamlit Cloud
 streamlit>=1.30.0
 torch>=2.0.0
 torchvision>=0.15.0
