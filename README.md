@@ -135,3 +135,4 @@ The app rejects an uploaded image when:
 ## License
 
 Include your project license here.
+"# SkinLens-AI" 
