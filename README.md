@@ -1,138 +1,211 @@
-# SkinLens-AI
+# 🔬 SkinLens AI — Professional Medical Diagnostic Screen
 
-A Streamlit web app for skin lesion risk estimation using a PyTorch binary classifier. The app supports user-uploaded checkpoints and a default trained checkpoint, validates incoming images, and aligns the inference pipeline with the Kaggle notebook training workflow.
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.1.3%2Bcpu-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.54.0-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-5.0.0-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
+[![Albumentations](https://img.shields.io/badge/Albumentations-2.0.8-00C853?style=for-the-badge)](https://albumentations.ai/)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-## Project Summary
+> **SkinLens AI** is an advanced, deep-learning clinical decision-support web application for automated skin lesion risk assessment. Built with **PyTorch**, **EfficientNet-B0**, **Grad-CAM neural interpretability**, and **Streamlit**, it provides dermatological risk predictions (Malignant vs. Benign), model interpretability overlays, patient scan history tracking, and lab-style PDF report generation.
 
-SkinLens-AI is designed to:
+---
 
-- Load a trained PyTorch checkpoint from a default location or from an uploaded `.pth` / `.pt` file
-- Preprocess skin lesion images using the same transform parameters used in the Kaggle notebook pipeline
-- Verify uploaded images to avoid meaningless predictions on documents, screenshots, or non-skin inputs
-- Run inference using a baseline EfficientNet-B0 classifier and display probability and label results
-- Save prediction outputs to `outputs/`
+## 📋 Table of Contents
 
-## Repository Structure
+- [Overview & Architecture](#-overview--architecture)
+- [Key Features](#-key-features)
+- [Repository Structure](#-repository-structure)
+- [Installation & Environment Setup](#-installation--environment-setup)
+- [Usage Guide](#-usage-guide)
+- [Inference & Preprocessing Pipeline](#-inference--preprocessing-pipeline)
+- [Neural Interpretability (Grad-CAM)](#-neural-interpretability-grad-cam)
+- [Patient Reports & PDF Generation](#-patient-reports--pdf-generation)
+- [Model Architecture & Hyperparameters](#-model-architecture--hyperparameters)
+- [Medical Advisory & Safety Notice](#-medical-advisory--safety-notice)
 
-- `app.py` — Streamlit application UI and workflow control
-- `predict.py` — Model checkpoint loading, state dict extraction, validation, and prediction
-- `model.py` — `BaselineModel` architecture (EfficientNet-B0 fallback to simple CNN)
-- `transforms.py` — Inference preprocessing with 224x224 resize and ImageNet normalization
-- `models/` — Default checkpoint and model metadata
-- `notebooks/` — Kaggle notebook assets used for training and pipeline alignment
-- `uploads/` — Saved image uploads for inference
-- `uploaded_models/` — Saved user-uploaded checkpoint files
-- `outputs/` — Saved prediction summary results
+---
 
-## Key Features
+## 🏗 Overview & Architecture
 
-- Default checkpoint fallback: uses `models/best_model.pth` when no upload is provided
-- Checkpoint upload support: users can upload a custom `.pth` / `.pt` checkpoint
-- Image validation: rejects documents/screenshots and images without sufficient skin content
-- Notebook-aligned preprocessing: uses 224x224 resize, ImageNet mean/std normalization, and tensor conversion
-- Model sanity check: validates loaded checkpoint with a dummy forward pass before inference
+SkinLens AI is engineered to bridge Kaggle model training workflows with a high-end, responsive clinical web interface. It allows clinicians and researchers to analyze dermatological photos, inspect feature activation maps, and store diagnostic audit trails.
 
-## How It Works
-
-1. The app starts and initializes session state and working directories.
-2. A user may upload a model checkpoint. If valid, the app loads it and performs a sanity check.
-3. If no checkpoint is uploaded, the app attempts to load the default model from `models/best_model.pth`.
-4. A user uploads an image, and the app validates the image content.
-5. If the image passes validation and the model is loaded, the app runs inference and displays the result.
-6. Prediction results are saved in `outputs/`.
-
-## Installation
-
-1. Clone the repository:
-
-```bash
-git clone <repository-url>
-cd SkinLens-AI
+```mermaid
+flowchart TD
+    A[User / Clinician] -->|Upload Skin Lesion Photo| B[Pre-Prediction Quality Gate]
+    B -->|Check White Ratio < 45%| C{Is Screenshot/Doc?}
+    C -->|Yes| D[❌ Reject Image & Show Alert]
+    C -->|No| E{Skin Content >= 3.0%?}
+    E -->|No| F[❌ Reject: Low Skin Content]
+    E -->|Yes| G[✔ Preprocessing Pipeline 224x224, ImageNet Norm]
+    G --> H[EfficientNet-B0 Neural Network]
+    H --> I[Test-Time Augmentation TTA]
+    I --> J[Probability & Label Sigmoid Logit]
+    H --> K[Grad-CAM Attention Heatmap Generator]
+    J --> L[Clinical Results Card & Recommendations]
+    K --> M[Superimposed Attention Overlay]
+    L --> N[Save JSON/TXT to outputs/]
+    M --> N
+    N --> O[Generate Clinical PDF Report / Print Document]
 ```
 
-2. Create a Python environment and install dependencies:
+---
 
-```bash
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
+## ✨ Key Features
+
+- **🛡 Pre-Prediction Quality Gate**:
+  - Automatically screens uploads using OpenCV YCrCb skin-color space heuristics and brightness histograms.
+  - Blocks document scans, screenshots, and non-skin photographs before triggering neural inference.
+
+- **⚡ EfficientNet-B0 Binary Classification**:
+  - Leverages pre-trained EfficientNet-B0 with custom classifier heads for binary malignancy scoring (Malignant / Benign).
+  - Robust fallback to a lightweight multi-layer CNN architecture if `torchvision` EfficientNet is unavailable.
+
+- **🔬 Test-Time Augmentation (TTA)**:
+  - Multi-pass inference averaging original, horizontal flip, and vertical flip transformations for reduced variance and higher clinical confidence.
+
+- **🔥 Grad-CAM Neural Interpretability**:
+  - Visualizes class activation maps on the final convolutional feature layer to highlight anatomical regions of interest causing the model prediction.
+
+- **📄 Clinical Consultation PDF Reports**:
+  - Generates lab-formatted PDF diagnostic sheets complete with patient metadata, clinician remarks, decision metrics, and side-by-side Grad-CAM visualizations using ReportLab.
+
+- **📊 Training Metrics & Checkpoint Manager**:
+  - Interactive training/validation loss and accuracy curves plotted from `models/history.csv`.
+  - Supports uploading custom `.pth` or `.pt` PyTorch checkpoints dynamically at runtime.
+
+---
+
+## 📂 Repository Structure
+
+```directory
+SkinLens-AI/
+├── app.py                     # Streamlit application UI, navigation, and workflow controller
+├── predict.py                 # Checkpoint loading, state dict extraction, and TTA inference engine
+├── model.py                   # BaselineModel architecture (EfficientNet-B0 fallback to CNN)
+├── transforms.py              # Inference preprocessing pipeline (224x224 resize, ImageNet mean/std)
+├── gradcam.py                 # Grad-CAM heatmap and superimposed overlay generator
+├── pdf_generator.py           # ReportLab medical diagnostic PDF generation script
+├── verify_env.py              # Environment package verification script
+├── models/
+│   ├── best_model.pth         # Default trained PyTorch weight checkpoint
+│   ├── model_config.json      # Model architecture hyperparameters & loss configuration
+│   └── history.csv            # Training and validation epoch loss/accuracy logs
+├── notebooks/                 # Kaggle notebook training assets and reference pipelines
+├── uploads/                   # Temporary & saved image uploads
+├── uploaded_models/           # Saved user-uploaded PyTorch weight checkpoints
+└── outputs/                   # Diagnostic results (JSON, TXT, and Grad-CAM overlay PNGs)
 ```
 
-> If `requirements.txt` is not present, install the needed packages manually:
+---
 
-```bash
-pip install streamlit torch torchvision opencv-python pillow albumentations
-```
+## ⚙️ Installation & Environment Setup
 
-## Usage
+### Prerequisites
+- **Python**: `3.10` or higher recommended
+- **OS**: Windows, macOS, or Linux
 
-Run the Streamlit app:
+### Step-by-Step Setup
 
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/vaibhavchau37/SkinLens-AI.git
+   cd SkinLens-AI
+   ```
+
+2. **Create & Activate a Virtual Environment**:
+   - **Windows (PowerShell)**:
+     ```powershell
+     python -m venv venv
+     .\venv\Scripts\Activate.ps1
+     ```
+   - **Linux / macOS**:
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     ```
+
+3. **Install Dependencies**:
+   ```bash
+   pip install streamlit torch torchvision opencv-python pillow albumentations reportlab matplotlib numpy
+   ```
+
+4. **Verify Environment**:
+   ```bash
+   python verify_env.py
+   ```
+
+---
+
+## 🚀 Usage Guide
+
+### Launching the Application
+
+Run the Streamlit web app:
 ```bash
 streamlit run app.py
 ```
 
-Then:
+The application will open automatically in your browser at **`http://localhost:8501`**.
 
-- Upload a trained model checkpoint (`.pth` or `.pt`) or let the app use the default checkpoint
-- Upload a close-up image of a skin lesion
-- Click **Run analysis** when the image is valid
-- Review the prediction probability and label
+### Navigating the Panel
 
-## Model Details
+| Menu Tab | Description |
+| :--- | :--- |
+| **🏠 Home** | Dashboard overview with total scan metrics, benign/malignant case breakdown, clinical workflow steps, and safety advisories. |
+| **🔍 Prediction** | Upload skin photos, run pre-prediction quality checks, execute neural inference, view malignancy probabilities, and inspect Grad-CAM overlays. |
+| **📜 History** | Browse previously analyzed scans, review timestamps, view confidence scores, generate individual case reports, or delete records. |
+| **📊 Reports** | Formulate patient diagnostic reports, add clinician observations, download lab-style PDFs, or print diagnostic sheets. |
+| **🔬 Model Info** | Inspect network specs, view epoch loss/accuracy progression charts, and upload custom PyTorch checkpoints (`.pth`/`.pt`). |
+| **ℹ️ About** | Project technical overview, ISIC dataset background, and an interactive clinical **ABCDE** melanocytic warning checklist. |
 
-- `BaselineModel` is an EfficientNet-B0 based binary classifier when `torchvision` is available
-- Falls back to a lightweight CNN model when EfficientNet is unavailable
-- The app expects a checkpoint with one of these formats:
-  - `model_state_dict`
-  - `state_dict`
-  - `model` dictionary
-  - bare state dict
+---
 
-## Inference Pipeline
+## 🧪 Inference & Preprocessing Pipeline
 
-- Load image with OpenCV and convert to RGB
-- Apply `valid_transform` from `transforms.py`
-- Run the model in `torch.inference_mode()`
-- Convert logits to probability using `torch.sigmoid`
-- Return label:
-  - `Malignant` if probability >= 0.5
-  - `Benign` otherwise
+To maintain 100% fidelity with the Kaggle training pipeline, incoming images are transformed as follows:
 
-## Notebook Alignment
+```python
+# Inference transform pipeline (transforms.py)
+valid_transform = A.Compose([
+    A.Resize(height=224, width=224),
+    A.Normalize(
+        mean=(0.485, 0.456, 0.406),  # ImageNet Mean
+        std=(0.229, 0.224, 0.225)   # ImageNet Standard Deviation
+    ),
+    ToTensorV2()
+])
+```
 
-The `notebooks/` directory contains Kaggle notebook assets used for reference. Important alignment points include:
+### Classification Rules
+- **Logit Conversion**: Sigmoid function \(\sigma(z) = \frac{1}{1 + e^{-z}}\) maps model output to probability \(P(\text{Malignant})\).
+- **Label Mapping**:
+  - `Malignant` if \(P(\text{Malignant}) \ge 0.50\) (HIGH RISK)
+  - `Benign` if \(P(\text{Malignant}) < 0.50\) (LOW RISK)
+- **Confidence Metric**: Calculated as \(2 \times |P - 0.50|\), measuring distance from the decision boundary.
 
-- `IMAGE_SIZE = 224`
-- `IMAGENET_MEAN = (0.485, 0.456, 0.406)`
-- `IMAGENET_STD = (0.229, 0.224, 0.225)`
-- Validation transform: resize, normalize, tensor conversion
+---
 
-## Validation Rules
+## 📐 Model Architecture & Hyperparameters
 
-The app rejects an uploaded image when:
+| Parameter | Configuration |
+| :--- | :--- |
+| **Backbone Architecture** | EfficientNet-B0 (Pretrained ImageNet weights) |
+| **Input Dimensions** | `3 x 224 x 224` |
+| **Classifier Head** | Dropout (`0.3`) $\rightarrow$ Linear (`1280` $\rightarrow$ `1`) |
+| **Loss Function** | `BCEWithLogitsLoss` (Binary Cross-Entropy) |
+| **Optimizer** | `AdamW` ($\text{lr} = 10^{-4}$, weight decay $= 10^{-2}$) |
+| **Scheduler** | `CosineAnnealingLR` |
+| **Normalization** | ImageNet Mean (`0.485, 0.456, 0.406`), Std (`0.229, 0.224, 0.225`) |
 
-- It appears to be a document or screenshot
-- It lacks sufficient skin-like regions
-- The checkpoint fails to load or pass the sanity check
+---
 
-## Files to Review
+## 🩺 Medical Advisory & Safety Notice
 
-- `app.py`
-- `predict.py`
-- `model.py`
-- `transforms.py`
-- `models/model_config.json`
-- `notebooks/05-06-dataset-dataloader.ipynb`
-- `project_documentation.txt`
+> [!IMPORTANT]
+> **Clinical Decision Support Only**: SkinLens AI is designed strictly as a probabilistic decision support tool for clinical researchers and medical professionals. Classifications produced by the neural network do **not** constitute a formal medical diagnosis. All skin lesions must undergo dermoscopy and histopathological tissue biopsy by a licensed dermatologist.
 
-## Notes
+---
 
-- This app is not a medical diagnosis tool. It provides a probabilistic model output only.
-- Use a real close-up photo of a skin lesion for meaningful predictions.
-- If the uploaded model is not compatible with the expected architecture, the app will report an error.
+## 📄 License
 
-## License
-
-Include your project license here.
-"# SkinLens-AI" 
+Distributed under the MIT License. See `LICENSE` for details.

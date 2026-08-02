@@ -127,3 +127,41 @@ def predict(image_path, model):
 
     label = "Malignant" if probability >= 0.5 else "Benign"
     return probability, label
+
+
+def predict_with_tta(image_path, model):
+    """
+    Computes predictions with Test-Time Augmentation (TTA) using 4 variants:
+    Original, Horizontal Flip, Vertical Flip, and Dual Flip.
+    """
+    if model is None:
+        raise ValueError("A loaded model instance is required for prediction.")
+
+    image = cv2.imread(str(image_path))
+    if image is None:
+        raise FileNotFoundError(f"Unable to read image at {image_path}")
+
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+    # Generate the 4 augmented variants
+    variants = [
+        image,
+        cv2.flip(image, 1),
+        cv2.flip(image, 0),
+        cv2.flip(image, -1)
+    ]
+    
+    device = next(model.parameters()).device
+    probs = []
+    
+    with torch.inference_mode():
+        for var in variants:
+            transformed = valid_transform(image=var)
+            image_tensor = transformed["image"].unsqueeze(0).to(device)
+            logits = model(image_tensor)
+            prob = torch.sigmoid(logits).squeeze().item()
+            probs.append(prob)
+            
+    avg_probability = float(sum(probs) / len(probs))
+    label = "Malignant" if avg_probability >= 0.5 else "Benign"
+    return avg_probability, label

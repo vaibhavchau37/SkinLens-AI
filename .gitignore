@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments & IDEs
+.venv/
+venv/
+ENV/
+.vscode/
+.idea/
+.qodo/
+.dist/
+
+# User uploads, outputs, and uploaded checkpoints
+uploads/*
+!uploads/.gitkeep
+uploaded_models/*
+!uploaded_models/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# System & OS files
+.DS_Store
+Thumbs.db
