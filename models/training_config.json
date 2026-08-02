@@ -1,0 +1,13 @@
+{
+    "epochs": 10,
+    "batch_size": 32,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "patience": 3,
+    "use_amp": true,
+    "save_best_only": true,
+    "loss_function": "focal",
+    "max_grad_norm": 1.0,
+    "scheduler": "CosineAnnealingLR",
+    "optimizer": "AdamW"
+}

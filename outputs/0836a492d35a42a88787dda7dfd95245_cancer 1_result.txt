@@ -1,0 +1,2 @@
+Prediction: Malignant
+Probability: 0.7567

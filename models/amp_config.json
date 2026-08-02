@@ -1,0 +1,5 @@
+{
+    "enabled": true,
+    "device": "cuda",
+    "torch_version": "2.10.0+cu128"
+}

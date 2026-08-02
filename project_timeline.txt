@@ -1,0 +1,28 @@
+SkinLens-AI Project Timeline
+
+1. Project setup
+- Created a Streamlit application to provide a UI for skin lesion image classification.
+- Added directories for uploads, outputs, and uploaded checkpoints.
+
+2. Model and inference pipeline
+- Implemented `model.py` with `BaselineModel` based on EfficientNet-B0 and a fallback CNN.
+- Implemented `transforms.py` to match the Kaggle notebook transform config and support albumentations or torchvision.
+- Implemented `predict.py` to load checkpoints, extract state dicts, and run inference.
+
+3. Validation and robustness
+- Added checkpoint loading fallback behavior and `DEFAULT_CHECKPOINT_PATH` support.
+- Added model sanity checks using a dummy forward pass.
+- Added skin-content and document/screenshot detection to prevent invalid predictions.
+- Added explicit UI messaging for uploaded vs default checkpoints.
+
+4. Notebook integration
+- Copied Kaggle notebook assets into `notebooks/` for reference.
+- Ensured the app uses notebook-derived preprocessing parameters: 224x224 input size and ImageNet normalization.
+- Confirmed the model definitions and pipeline align with the notebook dataset and transform logic.
+
+5. Final review and verification
+- Verified the main Python files compile successfully: `app.py`, `predict.py`, `model.py`, `transforms.py`.
+- Confirmed the default trained checkpoint is loaded when no uploaded checkpoint is present.
+- Confirmed inference is gated behind valid image and valid checkpoint conditions.
+
+This timeline captures the project progression from initial app creation through model loading, validation, notebook alignment, and final verification.

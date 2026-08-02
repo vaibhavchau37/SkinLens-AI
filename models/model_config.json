@@ -1,0 +1,10 @@
+{
+    "model_name": "EfficientNet-B0",
+    "input_size": 224,
+    "num_classes": 1,
+    "dropout": 0.3,
+    "pretrained": true,
+    "loss_function": "BCEWithLogitsLoss",
+    "optimizer": "AdamW",
+    "scheduler": "CosineAnnealingLR"
+}

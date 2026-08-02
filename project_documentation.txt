@@ -1,0 +1,99 @@
+SkinLens-AI Project Documentation
+
+1. Project Goal
+The goal of this project was to build a working skin lesion classification app using Streamlit and a PyTorch model checkpoint. The app must accept user-uploaded checkpoints, validate uploaded images, avoid meaningless predictions on non-skin inputs, and align with the Kaggle notebook pipeline used for training.
+
+2. Starting Point
+The repository began with:
+- `app.py`: the Streamlit application entry point
+- `predict.py`: model loading and inference logic
+- `model.py`: model architecture definitions
+- `transforms.py`: image preprocessing transforms
+- `models/`: checkpoint and configuration artifacts
+- `notebooks/`: Kaggle notebook assets for reference
+
+3. Project Scope and Requirements
+The project was designed to:
+- Accept a `.pth` or `.pt` checkpoint upload
+- Fall back to a default trained checkpoint (`models/best_model.pth`) when no upload is provided
+- Preprocess images exactly like the Kaggle notebook pipeline
+- Validate that the uploaded image is a real skin lesion photo
+- Prevent predictions on documents, screenshots, or non-skin images
+- Display prediction probability and class label
+- Save prediction summaries to `outputs/`
+
+4. Key Components
+- `app.py`
+  - Builds the Streamlit UI
+  - Manages model and image uploads
+  - Tracks session state for checkpoint path, loaded model, and errors
+  - Runs validation and inference only when both model and image are valid
+- `predict.py`
+  - Loads the checkpoint with `load_model()`
+  - Extracts the correct state dictionary from saved checkpoint structures
+  - Creates `BaselineModel` and loads weights with strict compatibility checks
+  - Performs inference with `predict()` using `valid_transform`
+- `model.py`
+  - Defines `BaselineModel`
+  - Uses EfficientNet-B0 when available
+  - Falls back to a simple CNN if torchvision EfficientNet is unavailable
+- `transforms.py`
+  - Implements inference preprocessing
+  - Uses the same image size and normalization values as the Kaggle pipeline
+  - Supports albumentations with `ToTensorV2()` or a torchvision fallback
+- `models/model_config.json`
+  - Stores metadata about the model architecture and training hyperparameters
+- `notebooks/`
+  - Provides the Kaggle notebook pipeline for dataset loading, transform config, and model training reference
+
+5. Implementation Path
+5.1 Initial app functionality
+- Verified that the app could load a model checkpoint and upload an image.
+- Confirmed `predict.py` could import `valid_transform` and `BaselineModel` dynamically when needed.
+
+5.2 Model loading improvements
+- Added default checkpoint fallback via `DEFAULT_CHECKPOINT_PATH`
+- Made `load_model()` accept a `None` path and load the default model automatically
+- Added state dictionary extraction logic for diverse checkpoint formats
+- Added a helper `validate_model()` that runs a dummy forward pass
+
+5.3 Validation and safety
+- Added skin-content validation in `app.py` with `is_skin_like_image()`
+- Added document/screenshot detection with `is_document_or_screenshot()`
+- Prevented prediction unless the image passes these checks
+- Displayed clear user messages for invalid image or checkpoint states
+
+5.4 Notebook alignment
+- Confirmed the Kaggle notebook uses `IMAGE_SIZE = 224`, ImageNet mean/std, and `valid_transform` with `A.Resize`, `A.Normalize`, and `ToTensorV2()`
+- Verified our `transforms.py` uses the same values and logic
+- Ensured `BaselineModel` matches the EfficientNet-B0 baseline described in the notebooks
+
+5.5 Final verification
+- Ensured all Python files compile: `app.py`, `predict.py`, `model.py`, `transforms.py`
+- Confirmed the app now handles both uploaded checkpoints and the default model checkpoint
+- Confirmed invalid images do not trigger inference
+
+6. How to Explain It
+If asked by a reviewer or instructor, use these points:
+- "I started by reviewing the repository structure and the Kaggle notebook pipeline to understand the target model and preprocessing."
+- "Then I made the Streamlit app robust by supporting checkpoint uploads and a default trained checkpoint."
+- "Next I added validation rules so the app only predicts on real skin lesion photos and does not evaluate documents/screenshots."
+- "I aligned the transform pipeline with the notebook values and added model sanity checks to ensure checkpoint compatibility."
+- "Finally I tested compilation and verified the end-to-end flow from upload to prediction output."
+
+7. Final Status
+- The app supports user-uploaded checkpoints and a default trained checkpoint.
+- The app uses notebook-derived preprocessing values and model architecture.
+- The app rejects invalid image uploads and reports errors clearly.
+- Results are saved to the `outputs/` directory.
+
+8. Files to show during explanation
+- `app.py`
+- `predict.py`
+- `model.py`
+- `transforms.py`
+- `models/best_model.pth`
+- `models/model_config.json`
+- `notebooks/05-06-dataset-dataloader.ipynb`
+
+This document is the complete start-to-end narrative for SkinLens-AI, ready for presentation or explanation in an academic review."}]}

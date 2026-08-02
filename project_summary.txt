@@ -1,0 +1,51 @@
+Project Summary for SkinLens-AI
+
+Overview:
+This repository contains a Streamlit-based skin lesion classification app built around a PyTorch EfficientNet-B0 binary classifier. The user can upload a trained checkpoint or rely on the default checkpoint stored in `models/best_model.pth`. The app also validates uploaded images to prevent predictions on screenshots, documents, or non-skin images.
+
+Key components:
+- `app.py`: Streamlit app interface for uploading models and images, validating inputs, running inference, and displaying results.
+- `predict.py`: Model loading and prediction logic, including checkpoint extraction, state dict compatibility handling, and inference using `valid_transform`.
+- `model.py`: Defines `BaselineModel`, an EfficientNet-B0 based classifier with a fallback simple CNN when `torchvision` EfficientNet is unavailable.
+- `transforms.py`: Defines the inference preprocessing pipeline matching the Kaggle notebook: resize to 224x224, ImageNet normalization, and conversion to tensor.
+- `models/model_config.json`: Metadata describing the model architecture and training configuration.
+- `models/best_model.pth`: Default trained checkpoint used by the app when no uploaded checkpoint is provided.
+- `notebooks/`: Copied Kaggle notebook assets used as reference for the training and preprocessing pipeline.
+
+Workflow and behavior:
+1. The app initializes upload directories and Streamlit session state.
+2. A user may upload a `.pth` or `.pt` model checkpoint. If uploaded, the app saves it to `uploaded_models/` and attempts to load it.
+3. If no checkpoint is uploaded, the app falls back to the default checkpoint at `models/best_model.pth` when available.
+4. A user uploads an image file. The app validates the image content using skin-tone heuristics and document/screenshot heuristics.
+5. If the image is valid and the model is successfully loaded, the user can run inference.
+6. The app performs preprocessing via `valid_transform`, runs the model in `torch.inference_mode()`, applies sigmoid to the logits, and reports a probability and binary label (`Malignant` or `Benign`).
+7. Results are saved to `outputs/` as a text summary file.
+
+Notebook alignment:
+- The preprocessing pipeline matches the Kaggle notebook transform config: `IMAGE_SIZE = 224`, ImageNet mean/std normalization, and `ToTensorV2` when albumentations is installed.
+- The model architecture is consistent with the notebook's baseline EfficientNet-B0 classifier.
+- The project includes notebook artifacts from the Kaggle pipeline for reference and alignment.
+
+Important notes:
+- The app explicitly disables inference on non-skin images and documents to avoid meaningless predictions.
+- Checkpoint compatibility is enforced through a state dict extraction flow and sanity checks.
+- The app supports both uploaded checkpoints and a default trained checkpoint to simplify usage.
+
+Usage:
+- Run `streamlit run app.py` to launch the app.
+- Upload a valid model checkpoint or allow the app to use the default checkpoint.
+- Upload a close-up skin lesion image for analysis.
+- Read the output metrics and save the result file from the app UI.
+
+Repository structure:
+- `app.py`
+- `predict.py`
+- `model.py`
+- `transforms.py`
+- `models/`
+- `notebooks/`
+- `uploads/`
+- `uploaded_models/`
+- `outputs/`
+
+This summary describes the repository from setup and model inference flow through validation, default checkpoint fallback, and deployment as a Streamlit app.
