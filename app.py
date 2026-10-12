@@ -639,6 +639,10 @@ if "model_path" not in st.session_state:
     st.session_state.model_source = "default"
 if "selected_scan_stem" not in st.session_state:
     st.session_state.selected_scan_stem = None
+if "is_admin" not in st.session_state:
+    st.session_state.is_admin = False
+if "history_recent_count" not in st.session_state:
+    st.session_state.history_recent_count = 5
 
 # Default check for model loading
 if st.session_state.model_path is None and DEFAULT_MODEL_PATH.exists():
@@ -681,7 +685,7 @@ st.sidebar.markdown('<div style="margin-bottom: 10px;"><span class="med-label" s
 for icon, name, full_key in nav_items:
     is_selected = (st.session_state.get("navigation_selection") == full_key)
     btn_kind = "primary" if is_selected else "secondary"
-    if st.sidebar.button(f"{icon}   {name}", key=f"sidebar_nav_{name}", use_container_width=True, type=btn_kind):
+    if st.sidebar.button(f"{icon}   {name}", key=f"sidebar_nav_{name}", width="stretch", type=btn_kind):
         st.session_state.navigation_selection = full_key
         st.rerun()
 
@@ -740,6 +744,36 @@ st.sidebar.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.sidebar.markdown('<div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 15px 0 15px 0;"></div>', unsafe_allow_html=True)
+st.sidebar.markdown('<span class="med-label" style="display: block; margin-bottom: 8px;">ADMINISTRATOR ACCESS</span>', unsafe_allow_html=True)
+
+ADMIN_PASSWORD = "admin"
+
+if st.session_state.is_admin:
+    st.sidebar.markdown("""
+<div style="background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px;">
+    <div style="color: #c084fc; font-weight: 700; font-size: 0.75rem; display: flex; align-items: center; gap: 6px;">
+        <span>🛡️</span> ADMIN MODE ACTIVE
+    </div>
+    <div style="color: #e9d5ff; font-size: 0.7rem; margin-top: 2px;">
+        Full archive & audit controls enabled.
+    </div>
+</div>
+""", unsafe_allow_html=True)
+    if st.sidebar.button("Logout Admin 🔒", width="stretch", type="secondary", key="sidebar_admin_logout_btn"):
+        st.session_state.is_admin = False
+        st.rerun()
+else:
+    with st.sidebar.expander("🔑 Admin Login", expanded=False):
+        pass_input = st.text_input("Passcode", type="password", key="admin_password_input", placeholder="Enter admin code...")
+        if st.button("Authenticate 🔓", width="stretch", type="primary", key="admin_login_btn"):
+            if pass_input.strip() == ADMIN_PASSWORD or pass_input.strip() == "admin123":
+                st.session_state.is_admin = True
+                st.success("Admin access granted.")
+                time.sleep(0.3)
+                st.rerun()
+            else:
+                st.error("Incorrect passcode.")
+
 st.sidebar.markdown(
     '<div style="text-align: center; color: #475569; font-size: 0.7rem; line-height: 1.4;">'
     '<strong style="color: #64748b;">SkinLens AI v2.0.0</strong><br/>Medical Decision Support Software</div>',
@@ -867,7 +901,7 @@ elif page == "🔍 Prediction":
             
             with col_img:
                 st.markdown('<span class="med-label">UPLOADED IMAGE PREVIEW</span>', unsafe_allow_html=True)
-                st.image(image, use_container_width=True)
+                st.image(image, width="stretch")
                 
             with col_val:
                 st.markdown('<span class="med-label">PRE-PREDICTION QUALITY GATE</span>', unsafe_allow_html=True)
@@ -1043,20 +1077,18 @@ elif page == "🔍 Prediction":
                         st.markdown('<span class="med-label" style="margin-top: 15px; margin-bottom: 12px; display: block;">Neural Attention Interpretability (Grad-CAM)</span>', unsafe_allow_html=True)
                         col_g1, col_g2, col_g3 = st.columns(3)
                         with col_g1:
-                            st.image(orig_img, caption="Original Close-up Image", use_container_width=True)
+                            st.image(orig_img, caption="Original Close-up Image", width="stretch")
                         with col_g2:
-                            st.image(heatmap_img, caption="Grad-CAM Attention Heatmap", use_container_width=True)
+                            st.image(heatmap_img, caption="Grad-CAM Attention Heatmap", width="stretch")
                         with col_g3:
-                            st.image(overlay_img, caption="Superimposed Attention Overlay", use_container_width=True)
+                            st.image(overlay_img, caption="Superimposed Attention Overlay", width="stretch")
                             
                         st.success("Analysis recorded successfully. Check details in 'History' or 'Reports'.")
 
 # --- 📜 HISTORY PAGE ---
 elif page == "📜 History":
-    st.markdown('<h1 style="color: #f8fafc;">Patient Scan History</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="color: #94a3b8; font-size: 1rem; margin-bottom: 2rem;">A list of all skin scans processed in this workspace. You can generate medical reports or clean records.</p>', unsafe_allow_html=True)
-    
     hist_list = load_history()
+    is_admin = st.session_state.get("is_admin", False)
     
     # Callback to safely switch pages without StreamlitAPIException
     def set_active_report(stem):
@@ -1064,11 +1096,70 @@ elif page == "📜 History":
         st.session_state.navigation_selection = "📊 Reports"
 
     if not hist_list:
+        st.markdown('<h1 style="color: #f8fafc;">Recent Patient Scans</h1>', unsafe_allow_html=True)
         st.info("No lesion analysis history found. Perform a diagnostic scan under the 'Prediction' tab to begin.")
     else:
-        st.markdown(f'<span class="med-label">RECORDED SCANS ({len(hist_list)})</span>', unsafe_allow_html=True)
-        
-        for idx, item in enumerate(hist_list):
+        if not is_admin:
+            # USER MODE: Show Recent History Only (Clean view, no admin prompts)
+            st.markdown('<h1 style="color: #f8fafc;">Recent Patient Scans</h1>', unsafe_allow_html=True)
+            st.markdown('<p style="color: #94a3b8; font-size: 1rem; margin-bottom: 1.5rem;">A list of your recently processed skin lesion scans.</p>', unsafe_allow_html=True)
+            
+            recent_limit = st.session_state.get("history_recent_count", 5)
+            items_to_display = hist_list[:recent_limit]
+            
+            st.markdown(f'<span class="med-label">RECENT SCANS ({len(items_to_display)})</span>', unsafe_allow_html=True)
+
+        else:
+            # ADMIN MODE: Full Archive View with Search, Filters & Pagination
+            st.markdown('<h1 style="color: #f8fafc;">Patient Scan History (Admin Archive)</h1>', unsafe_allow_html=True)
+            st.markdown('<p style="color: #94a3b8; font-size: 1rem; margin-bottom: 1.5rem;">Full historical audit database with search, filter, and management capabilities.</p>', unsafe_allow_html=True)
+            
+            col_hdr, col_adm = st.columns([4, 1.5])
+            with col_hdr:
+                st.markdown(f'<span class="med-label">FULL RECORDED ARCHIVE ({len(hist_list)} TOTAL RECORDS)</span>', unsafe_allow_html=True)
+            with col_adm:
+                if st.button("Exit Admin View 🔒", width="stretch", type="secondary", key="exit_admin_btn_top"):
+                    st.session_state.is_admin = False
+                    st.rerun()
+            
+            col_search, col_filter, col_page_size = st.columns([2.5, 1.5, 1])
+            with col_search:
+                search_query = st.text_input("🔍 Search Archive", placeholder="Search by filename, stem ID, or patient name...", key="admin_search_input")
+            with col_filter:
+                risk_filter = st.selectbox("Risk Filter", options=["All Scans", "High Risk (Malignant)", "Low Risk (Benign)"], key="admin_risk_filter_select")
+            with col_page_size:
+                page_size_val = st.selectbox("Per Page", options=[10, 20, 50, "All"], index=0, key="admin_page_size_select")
+
+            # Apply filters
+            filtered_items = hist_list
+            if search_query:
+                q = search_query.strip().lower()
+                filtered_items = [
+                    x for x in filtered_items 
+                    if q in x["filename"].lower() or q in x["stem"].lower() or q in x["patient_name"].lower()
+                ]
+            
+            if risk_filter == "High Risk (Malignant)":
+                filtered_items = [x for x in filtered_items if x["label"] == "Malignant"]
+            elif risk_filter == "Low Risk (Benign)":
+                filtered_items = [x for x in filtered_items if x["label"] == "Benign"]
+
+            # Pagination
+            if page_size_val != "All":
+                psize = int(page_size_val)
+                total_pages = max(1, (len(filtered_items) + psize - 1) // psize)
+                col_p1, col_p2 = st.columns([3, 1])
+                with col_p1:
+                    st.caption(f"Showing {min(len(filtered_items), psize)} of {len(filtered_items)} matching records (Page {st.session_state.get('admin_page_num', 1)} of {total_pages})")
+                with col_p2:
+                    current_p = st.number_input("Page", min_value=1, max_value=total_pages, value=1, step=1, key="admin_page_num")
+                
+                start_idx = (current_p - 1) * psize
+                items_to_display = filtered_items[start_idx : start_idx + psize]
+            else:
+                items_to_display = filtered_items
+
+        for idx, item in enumerate(items_to_display):
             badge = "badge-malignant" if item["label"] == "Malignant" else "badge-benign"
             risk_label = "HIGH RISK" if item["label"] == "Malignant" else "LOW RISK"
             color_text = "#fb7185" if item["label"] == "Malignant" else "#34d399"
@@ -1077,7 +1168,7 @@ elif page == "📜 History":
             
             with col_img:
                 if item["image_path"] and os.path.exists(item["image_path"]):
-                    st.image(item["image_path"], use_container_width=True)
+                    st.image(item["image_path"], width="stretch")
                 else:
                     st.markdown("""
 <div style="width: 100%; aspect-ratio: 1; background-color: #1e293b; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #64748b;">
@@ -1108,12 +1199,12 @@ elif page == "📜 History":
                     st.button(
                         "Report 📊", 
                         key=btn_report_key, 
-                        use_container_width=True, 
+                        width="stretch", 
                         on_click=set_active_report, 
                         args=(item["stem"],)
                     )
                 with col_btn2:
-                    if st.button("Delete 🗑", key=btn_del_key, use_container_width=True):
+                    if st.button("Delete 🗑", key=btn_del_key, width="stretch"):
                         delete_scan(item["stem"])
                         st.success(f"Deleted scan record: {item['filename']}")
                         time.sleep(0.5)
@@ -1130,7 +1221,9 @@ elif page == "📊 Reports":
     if not hist_list:
         st.info("No recorded scans available to generate reports. Please complete a prediction first.")
     else:
-        scan_options = {f"{item['filename']} ({item['timestamp']}) - {item['label']}": item["stem"] for item in hist_list}
+        is_admin = st.session_state.get("is_admin", False)
+        display_history_list = hist_list if is_admin else hist_list[:10]
+        scan_options = {f"{item['filename']} ({item['timestamp']}) - {item['label']}": item["stem"] for item in display_history_list}
         
         default_index = 0
         if st.session_state.selected_scan_stem is not None:
@@ -1195,7 +1288,7 @@ elif page == "📊 Reports":
             )
             
             # Save notes and patient data back to JSON
-            if st.button("Save Diagnostic Notes", use_container_width=True):
+            if st.button("Save Diagnostic Notes", width="stretch"):
                 updated_data = {
                     "patient_name": st.session_state[f"p_name_{selected_stem}"],
                     "patient_age": int(st.session_state[f"p_age_{selected_stem}"]),
@@ -1262,13 +1355,13 @@ elif page == "📊 Reports":
                     data=pdf_bytes,
                     file_name=pdf_filename,
                     mime="application/pdf",
-                    use_container_width=True
+                    width="stretch"
                 )
             else:
-                st.button("Download Report PDF 📄", disabled=True, use_container_width=True)
+                st.button("Download Report PDF 📄", disabled=True, width="stretch")
                 
         with col_pr3:
-            if st.button("Print Clinical Document 🖨", type="primary", use_container_width=True):
+            if st.button("Print Clinical Document 🖨", type="primary", width="stretch"):
                 st.components.v1.html("""
                 <script>
                     setTimeout(function() {
