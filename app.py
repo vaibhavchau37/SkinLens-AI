@@ -319,17 +319,82 @@ h1, h2, h3 {
     padding-right: 1rem !important;
 }
 
-/* Hide native Streamlit toolbar & header clutter */
+/* Hide native Streamlit toolbar clutter while keeping header accessible */
 div[data-testid="stToolbar"] {
     display: none !important;
 }
+
 header[data-testid="stHeader"] {
     background: transparent !important;
+    z-index: 99999 !important;
+    pointer-events: none !important;
+}
+
+/* Ensure sidebar collapse & expand controls are always visible, clickable, and prominent */
+header[data-testid="stHeader"] button,
+header[data-testid="stHeader"] [data-testid="stSidebarCollapsedControl"],
+header[data-testid="stHeader"] [data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapseButton"],
+button[data-testid="stSidebarCollapseButton"] {
+    pointer-events: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(14, 165, 233, 0.15) !important;
+    border: 1.5px solid rgba(14, 165, 233, 0.5) !important;
+    color: #38bdf8 !important;
+    border-radius: 10px !important;
+    padding: 6px !important;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.3) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+header[data-testid="stHeader"] button:hover,
+[data-testid="stSidebarCollapsedControl"]:hover,
+[data-testid="collapsedControl"]:hover,
+[data-testid="stSidebarCollapseButton"]:hover,
+button[data-testid="stSidebarCollapseButton"]:hover {
+    background: rgba(14, 165, 233, 0.35) !important;
+    border-color: #38bdf8 !important;
+    transform: scale(1.08) !important;
+    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5) !important;
+}
+
+/* Ensure SVG icons inside collapse/expand buttons are vibrant and crisp */
+header[data-testid="stHeader"] svg,
+[data-testid="stSidebarCollapsedControl"] svg,
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapseButton"] svg,
+button[data-testid="stSidebarCollapseButton"] svg {
+    fill: #38bdf8 !important;
+    stroke: #38bdf8 !important;
+    color: #38bdf8 !important;
+    width: 20px !important;
+    height: 20px !important;
+}
+
+/* Inside the sidebar, style the collapse button nicely */
+[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebar"] button[kind="header"] {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+    border-radius: 8px !important;
+}
+[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]:hover,
+[data-testid="stSidebar"] button[kind="header"]:hover {
+    background: rgba(14, 165, 233, 0.2) !important;
+    border-color: #0ea5e9 !important;
+    color: #38bdf8 !important;
 }
 
 /* Main Workspace Sizing & Padding */
 [data-testid="stMainBlockContainer"] {
-    padding-top: 2rem !important;
+    padding-top: 3.5rem !important;
     padding-bottom: 4rem !important;
     padding-left: 2.5rem !important;
     padding-right: 2.5rem !important;
